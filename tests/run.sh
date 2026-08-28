@@ -203,6 +203,35 @@ reject 'a new action type has its payload rules enforced' 'payload does not matc
 	 INSERT INTO audit_log (actor, action, entity_type, entity_id, after_json)
 	 VALUES ('ada', 'archive', 'invoice', 'INV-1', '{}');"
 
+# --- the example queries all run -------------------------------------------
+
+# queries.sql is documentation, and documentation that does not run rots. This
+# executes every query in it against the seeded database and fails on any SQL
+# error. It asserts nothing about the rows - the point is that the file stays
+# valid as the schema changes.
+qdb="$TMP/queries.db"
+( cd "$ROOT" && sqlite3 "$qdb" ".read tests/assertions.sql" ) >/dev/null 2>&1
+
+qout="$(cd "$ROOT" && sqlite3 "$qdb" 2>&1 <<'SQL'
+.parameter set :entity_type 'invoice'
+.parameter set :entity_id 'INV-1'
+.parameter set :actor 'ada'
+.parameter set :since '2026-01-01T00:00:00.000Z'
+.bail on
+.read queries.sql
+SQL
+)"
+qstatus=$?
+
+if [ "$qstatus" -eq 0 ] && ! printf '%s' "$qout" | grep -qiE '^(Parse error|Error|Runtime error)'; then
+	passed=$((passed + 1))
+else
+	failed=$((failed + 1))
+	printf 'FAIL queries.sql did not run cleanly
+%s
+' "$qout"
+fi
+
 # --- report ---------------------------------------------------------------
 
 total=$((passed + failed))
