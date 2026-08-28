@@ -55,6 +55,23 @@ action carries no payload".
   `2026-01-01t10:00:00z`.
 - **Deleting a row from `audit_action`**, which would orphan history.
 
+## Worked queries
+
+`queries.sql` holds the questions an incident actually starts with — an entity's
+full history, a field-level diff of each update, an actor's deletes measured
+against their own daily average, entities nobody has touched in 90 days, and two
+integrity checks (gaps in the id sequence, and rows whose `recorded_at` runs
+backwards against their id).
+
+```
+sqlite3 audit.db ".read queries.sql"
+```
+
+They are parameterised with `:named` placeholders; set them with `.parameter set`
+or edit the literals in. The test suite runs the whole file against the seeded
+database, so a query that stops being valid as the schema changes fails CI
+rather than failing the first person who needs it at 3am.
+
 ## Two design notes
 
 **Payload shape is a trigger, not a CHECK.** A `CHECK` constraint cannot
@@ -94,8 +111,8 @@ The guarantee is that no existing row can change, not that the verb is unusable.
 bash tests/run.sh
 ```
 
-48 checks: 23 positive assertions over the seeded views, and 25 statements that
-must be rejected with the right error. Rejection cases each need their own
+49 checks: 23 positive assertions over the seeded views, 25 statements that must
+be rejected with the right error, and one run of every query in `queries.sql`. Rejection cases each need their own
 `sqlite3` invocation, since a raised error aborts the enclosing script.
 
 ## License
