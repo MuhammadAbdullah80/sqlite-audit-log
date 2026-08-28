@@ -1,1 +1,10 @@
 * text=auto eol=lf
+
+# Linguist classifies SQL as type: data, which excludes it from a repository's
+# language statistics - so a repo that is almost entirely SQL reports itself as
+# Shell, on the strength of its test runner. linguist-detectable is Linguist's
+# documented override for exactly this case.
+*.sql linguist-detectable=true
+
+# The runner is scaffolding around the schema, not the substance of the repo.
+tests/run.sh linguist-detectable=false
